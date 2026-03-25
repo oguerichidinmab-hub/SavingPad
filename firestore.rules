@@ -41,7 +41,10 @@ service cloud.firestore {
     //   - id: string
     //   - content: string
     //   - author: string
+    //   - age: int (required)
     //   - image: string
+    //   - uid: string
+    //   - createdAt: timestamp
     //
     // Collection: partners
     // Document ID: {partnerId}
@@ -113,9 +116,10 @@ service cloud.firestore {
     }
 
     function isValidSuccessStory(data) {
-      return hasOnlyAllowedFields(data, ['id', 'content', 'author', 'image', 'uid', 'createdAt']) &&
+      return hasOnlyAllowedFields(data, ['id', 'content', 'author', 'age', 'image', 'uid', 'createdAt']) &&
              data.content is string && data.content.size() > 0 && data.content.size() < 2000 &&
              data.author is string && data.author.size() > 0 && data.author.size() < 100 &&
+             data.age is int && data.age >= 0 && data.age <= 120 &&
              (!('image' in data) || (data.image is string && data.image.size() < 1000000)) &&
              data.uid == request.auth.uid &&
              data.createdAt is timestamp;

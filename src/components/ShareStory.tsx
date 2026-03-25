@@ -23,6 +23,7 @@ const ShareStory: React.FC<ShareStoryProps> = ({ onBack, onComplete }) => {
   const [submitted, setSubmitted] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
+    age: '',
     story: '',
     image: ''
   });
@@ -40,6 +41,12 @@ const ShareStory: React.FC<ShareStoryProps> = ({ onBack, onComplete }) => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!formData.age) {
+      alert("Please include your age.");
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -63,11 +70,15 @@ const ShareStory: React.FC<ShareStoryProps> = ({ onBack, onComplete }) => {
         throw new Error("Authentication failed. Please try again or sign in from your profile.");
       }
 
+      const authorName = formData.name || 'Anonymous';
+      const authorDisplay = `${authorName}, ${formData.age}`;
+
       await addDoc(collection(db, 'success_stories'), {
         content: formData.story,
-        author: formData.name || 'Anonymous',
-        image: formData.image || `https://picsum.photos/seed/${Date.now()}/100/100`,
+        author: authorDisplay,
+        age: parseInt(formData.age),
         uid: currentUser.uid,
+        image: formData.image || `https://picsum.photos/seed/${Date.now()}/100/100`,
         createdAt: serverTimestamp()
       });
       setSubmitted(true);
@@ -144,17 +155,32 @@ const ShareStory: React.FC<ShareStoryProps> = ({ onBack, onComplete }) => {
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-4">
-        <div className="space-y-2">
-          <label className="text-[10px] font-bold text-brand-400 uppercase tracking-wider ml-1">Your Name (Optional)</label>
-          <div className="relative">
-            <User className="absolute left-4 top-1/2 -translate-y-1/2 text-brand-300" size={18} />
-            <input 
-              type="text" 
-              placeholder="How should we call you?"
-              value={formData.name}
-              onChange={(e) => setFormData({...formData, name: e.target.value})}
-              className="w-full pl-12 pr-4 py-4 bg-white border border-brand-100 rounded-2xl focus:ring-2 focus:ring-brand-500 outline-none transition-all text-sm"
-            />
+        <div className="grid grid-cols-3 gap-3">
+          <div className="col-span-2 space-y-2">
+            <label className="text-[10px] font-bold text-brand-400 uppercase tracking-wider ml-1">Your Name (Optional)</label>
+            <div className="relative">
+              <User className="absolute left-4 top-1/2 -translate-y-1/2 text-brand-300" size={18} />
+              <input 
+                type="text" 
+                placeholder="How should we call you?"
+                value={formData.name}
+                onChange={(e) => setFormData({...formData, name: e.target.value})}
+                className="w-full pl-12 pr-4 py-4 bg-white border border-brand-100 rounded-2xl focus:ring-2 focus:ring-brand-500 outline-none transition-all text-sm"
+              />
+            </div>
+          </div>
+          <div className="space-y-2">
+            <label className="text-[10px] font-bold text-brand-400 uppercase tracking-wider ml-1">Age *</label>
+            <div className="relative">
+              <input 
+                type="number" 
+                required
+                placeholder="Age"
+                value={formData.age}
+                onChange={(e) => setFormData({...formData, age: e.target.value})}
+                className="w-full px-4 py-4 bg-white border border-brand-100 rounded-2xl focus:ring-2 focus:ring-brand-500 outline-none transition-all text-sm"
+              />
+            </div>
           </div>
         </div>
 
