@@ -11,7 +11,7 @@ import {
   Share2
 } from 'lucide-react';
 import { db } from '../firebase';
-import { collection, query, onSnapshot } from 'firebase/firestore';
+import { collection, query, onSnapshot, orderBy } from 'firebase/firestore';
 import { handleFirestoreError, OperationType } from '../utils/errorHandlers';
 
 interface Group {
@@ -26,20 +26,22 @@ interface Story {
   content: string;
   author: string;
   image: string;
+  createdAt?: any;
 }
 
 interface CommunityProps {
   onDonate: () => void;
+  onShareStory: () => void;
 }
 
-const Community: React.FC<CommunityProps> = ({ onDonate }) => {
+const Community: React.FC<CommunityProps> = ({ onDonate, onShareStory }) => {
   const [groups, setGroups] = useState<Group[]>([]);
   const [stories, setStories] = useState<Story[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const groupsQuery = query(collection(db, 'community_groups'));
-    const storiesQuery = query(collection(db, 'success_stories'));
+    const storiesQuery = query(collection(db, 'success_stories'), orderBy('createdAt', 'desc'));
 
     const unsubscribeGroups = onSnapshot(groupsQuery, (snapshot) => {
       const groupsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Group));
@@ -90,12 +92,26 @@ const Community: React.FC<CommunityProps> = ({ onDonate }) => {
     }
   };
 
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 space-y-4">
+        <div className="w-10 h-10 border-4 border-brand-200 border-t-brand-600 rounded-full animate-spin" />
+        <p className="text-brand-500 font-medium text-sm">Loading community impact...</p>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Hero Section */}
       <div className="bg-brand-600 rounded-[2rem] p-8 text-white shadow-xl shadow-brand-200 relative overflow-hidden">
         <div className="relative z-10">
-          <h2 className="text-3xl font-bold mb-2">Sisterhood Circle</h2>
+          <div className="flex items-center gap-2 mb-2">
+            <h2 className="text-3xl font-bold">Sisterhood Circle</h2>
+            <span className="px-2 py-1 bg-white/20 backdrop-blur-md rounded-lg text-[8px] font-bold text-white uppercase tracking-wider border border-white/10">
+              Coming Soon
+            </span>
+          </div>
           <p className="text-brand-100 text-sm opacity-90 max-w-[250px]">
             Connect, share, and support each other in a safe space.
           </p>
@@ -135,7 +151,13 @@ const Community: React.FC<CommunityProps> = ({ onDonate }) => {
       </div>
 
       {/* Discussion Groups */}
-      <div className="space-y-4">
+      <div className="space-y-4 relative">
+        <div className="absolute inset-0 bg-white/40 backdrop-blur-[2px] z-20 rounded-[2.5rem] flex items-center justify-center">
+          <div className="bg-white/90 px-6 py-3 rounded-2xl shadow-xl border border-brand-100 flex items-center gap-2">
+            <Users size={18} className="text-brand-500" />
+            <span className="text-sm font-bold text-brand-900">Discussions Coming Soon</span>
+          </div>
+        </div>
         <div className="flex justify-between items-center px-1">
           <h3 className="font-bold text-brand-900">Active Discussions</h3>
           <button className="text-brand-600 text-xs font-bold flex items-center gap-1 bg-brand-50 px-3 py-2 rounded-xl hover:bg-brand-100 transition-colors">
@@ -167,9 +189,17 @@ const Community: React.FC<CommunityProps> = ({ onDonate }) => {
         </div>
       </div>
 
-      {/* Success Stories */}
+      {/* Community Impact */}
       <div className="space-y-4">
-        <h3 className="font-bold text-brand-900 px-1">Impact Stories</h3>
+        <div className="flex justify-between items-center px-1">
+          <h3 className="font-bold text-brand-900">Community Impact</h3>
+          <button 
+            onClick={onShareStory}
+            className="text-brand-600 text-xs font-bold flex items-center gap-1 bg-brand-50 px-3 py-2 rounded-xl hover:bg-brand-100 transition-colors"
+          >
+            <Plus size={14} /> Share Story
+          </button>
+        </div>
         {stories.map(story => (
           <div key={story.id} className="bg-white p-6 rounded-[2.5rem] shadow-sm border border-brand-100 relative overflow-hidden">
             <div className="absolute top-0 right-0 w-32 h-32 bg-brand-50/50 rounded-full -mr-16 -mt-16 blur-2xl" />
@@ -178,7 +208,7 @@ const Community: React.FC<CommunityProps> = ({ onDonate }) => {
                 <div className="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center">
                   <Award size={20} />
                 </div>
-                <h3 className="font-bold text-brand-900 text-sm">Community Impact</h3>
+                <h3 className="font-bold text-brand-900 text-sm">Impact Story</h3>
               </div>
               <div className="flex gap-5 items-start">
                 <div className="relative shrink-0">

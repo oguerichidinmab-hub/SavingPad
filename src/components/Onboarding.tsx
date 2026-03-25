@@ -15,7 +15,7 @@ import {
 } from 'lucide-react';
 import { auth, db } from '../firebase';
 import { doc, setDoc, serverTimestamp, getDoc } from 'firebase/firestore';
-import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
+import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signInAnonymously } from 'firebase/auth';
 import { handleFirestoreError, OperationType } from '../utils/errorHandlers';
 
 interface OnboardingProps {
@@ -91,21 +91,18 @@ const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
           padReminders: formData.padReminders,
         },
         isGuest: false,
-        createdAt: new Date().toISOString(), // Use ISO string for more reliable local/remote sync
+        createdAt: new Date().toISOString(),
       };
       
-      // Save to local storage first for immediate UI update
       localStorage.setItem('saving_pad_profile', JSON.stringify(userData));
       
       try {
         await setDoc(doc(db, 'users', user.uid), {
           ...userData,
-          createdAt: serverTimestamp() // Use real server timestamp in DB
+          createdAt: serverTimestamp()
         });
       } catch (dbErr: any) {
         console.error("Database error:", dbErr);
-        // If DB write fails but auth succeeded, we still have local profile
-        // We'll continue but warn in console
       }
       
       onComplete();
@@ -131,22 +128,50 @@ const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
     }
   };
 
-  const handleGuestMode = () => {
-    const guestData = {
-      uid: 'guest_' + Math.random().toString(36).substr(2, 9),
-      displayName: 'Guest User',
-      cycleLength: formData.cycleLength,
-      periodLength: formData.periodLength,
-      lastPeriodStart: formData.lastPeriodStart,
-      preferences: {
-        notificationsEnabled: formData.notificationsEnabled,
-        padReminders: formData.padReminders,
-      },
-      isGuest: true,
-      createdAt: new Date().toISOString(),
-    };
-    localStorage.setItem('saving_pad_profile', JSON.stringify(guestData));
-    onComplete();
+  const handleGuestMode = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      // Sign in anonymously to allow Firestore writes
+      const userCredential = await signInAnonymously(auth);
+      const user = userCredential.user;
+
+      const guestData = {
+        uid: user.uid,
+        displayName: 'Guest User',
+        cycleLength: formData.cycleLength,
+        periodLength: formData.periodLength,
+        lastPeriodStart: formData.lastPeriodStart,
+        preferences: {
+          notificationsEnabled: formData.notificationsEnabled,
+          padReminders: formData.padReminders,
+        },
+        isGuest: true,
+        createdAt: new Date().toISOString(),
+      };
+      localStorage.setItem('saving_pad_profile', JSON.stringify(guestData));
+      onComplete();
+    } catch (err: any) {
+      console.error("Guest Auth error:", err);
+      // Fallback to local-only guest if anonymous auth fails (e.g. not enabled)
+      const guestData = {
+        uid: 'guest_' + Math.random().toString(36).substr(2, 9),
+        displayName: 'Guest User',
+        cycleLength: formData.cycleLength,
+        periodLength: formData.periodLength,
+        lastPeriodStart: formData.lastPeriodStart,
+        preferences: {
+          notificationsEnabled: formData.notificationsEnabled,
+          padReminders: formData.padReminders,
+        },
+        isGuest: true,
+        createdAt: new Date().toISOString(),
+      };
+      localStorage.setItem('saving_pad_profile', JSON.stringify(guestData));
+      onComplete();
+    } finally {
+      setLoading(false);
+    }
   };
 
   const steps = [

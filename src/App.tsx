@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import React from 'react';
-import { onAuthStateChanged, User, signOut } from 'firebase/auth';
+import { onAuthStateChanged, User, signOut, signInAnonymously } from 'firebase/auth';
 import { doc, getDoc, getDocFromServer, onSnapshot, setDoc } from 'firebase/firestore';
 import { auth, db } from './firebase';
 import Onboarding from './components/Onboarding';
@@ -14,6 +14,7 @@ import Donate from './components/Donate';
 import PartnerIntro from './components/PartnerIntro';
 import RequestPad from './components/RequestPad';
 import PartnerImpact from './components/PartnerImpact';
+import ShareStory from './components/ShareStory';
 import ErrorBoundary from './components/ErrorBoundary';
 import { handleFirestoreError, OperationType } from './utils/errorHandlers';
 import { seedDatabase } from './utils/seedData';
@@ -31,11 +32,12 @@ import {
   ChevronRight,
   ChevronLeft,
   Users,
-  Building2
+  Building2,
+  Heart
 } from 'lucide-react';
 import { format, addDays, parseISO, differenceInDays, isBefore } from 'date-fns';
 
-type View = 'home' | 'calendar' | 'map' | 'education' | 'community' | 'partners' | 'donate' | 'partner-intro' | 'profile' | 'request-pad' | 'partner-impact';
+type View = 'home' | 'calendar' | 'map' | 'education' | 'community' | 'partners' | 'donate' | 'partner-intro' | 'profile' | 'request-pad' | 'partner-impact' | 'share-story';
 
 export default function App() {
   const [user, setUser] = useState<User | null>(null);
@@ -81,9 +83,16 @@ export default function App() {
   const checkLocalProfile = () => {
     const localProfile = localStorage.getItem('saving_pad_profile');
     if (localProfile) {
-      setUserProfile(JSON.parse(localProfile));
+      const data = JSON.parse(localProfile);
+      setUserProfile(data);
       setShowOnboarding(false);
       setLoading(false);
+      
+      // If guest but not signed in to Firebase, sign in anonymously
+      if (data.isGuest && !auth.currentUser) {
+        signInAnonymously(auth).catch(err => console.error("Auto-guest auth failed:", err));
+      }
+      
       return true;
     }
     return false;
@@ -313,6 +322,23 @@ export default function App() {
               </div>
               <ChevronRight size={20} className="text-purple-400" />
             </div>
+
+            {/* Share Story CTA */}
+            <div 
+              onClick={() => navigateTo('share-story')}
+              className="bg-pink-50 p-6 rounded-3xl border border-pink-100 flex items-center justify-between cursor-pointer hover:bg-pink-100 transition-all"
+            >
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-pink-500 shadow-sm">
+                  <Heart size={24} />
+                </div>
+                <div>
+                  <h3 className="font-bold text-brand-900 text-sm">Share Your Story</h3>
+                  <p className="text-xs text-brand-600">Tell us how Saving Pad helped you</p>
+                </div>
+              </div>
+              <ChevronRight size={20} className="text-pink-400" />
+            </div>
           </div>
         );
       case 'calendar':
@@ -322,7 +348,12 @@ export default function App() {
       case 'education':
         return <Education />;
       case 'community':
-        return <Community onDonate={() => navigateTo('donate')} />;
+        return <Community 
+          onDonate={() => navigateTo('donate')} 
+          onShareStory={() => navigateTo('share-story')}
+        />;
+      case 'share-story':
+        return <ShareStory onBack={handleBack} onComplete={() => navigateTo('community')} />;
       case 'partners':
         return <Partners 
           onDonate={() => navigateTo('donate')} 

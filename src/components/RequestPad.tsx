@@ -11,6 +11,7 @@ import {
   Heart
 } from 'lucide-react';
 import { db, auth } from '../firebase';
+import { signInAnonymously } from 'firebase/auth';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { handleFirestoreError, OperationType } from '../utils/errorHandlers';
 
@@ -35,7 +36,20 @@ const RequestPad: React.FC<RequestPadProps> = ({ location, onBack, onComplete })
     setLoading(true);
 
     try {
-      // 1. Save to Firestore
+      // 1. Ensure authenticated (anonymous fallback for guests)
+      if (!auth.currentUser) {
+        try {
+          await signInAnonymously(auth);
+        } catch (authError: any) {
+          console.error("Anonymous sign-in failed during request:", authError);
+          if (authError.code === 'auth/admin-restricted-operation') {
+            console.warn("Anonymous auth disabled. Proceeding to WhatsApp only.");
+          }
+          // We still proceed to WhatsApp even if Firestore fails
+        }
+      }
+
+      // 2. Save to Firestore
       if (auth.currentUser) {
         await addDoc(collection(db, 'requests'), {
           uid: auth.currentUser.uid,
@@ -50,7 +64,7 @@ const RequestPad: React.FC<RequestPadProps> = ({ location, onBack, onComplete })
         });
       }
 
-      // 2. Prepare Message Content
+      // 3. Prepare WhatsApp Content
       const rawPhone = location?.phone || '';
       const phoneMatch = rawPhone.match(/(\+234|0)\d{10}/);
       const targetPhone = phoneMatch ? phoneMatch[0].replace(/[^\d]/g, '') : '';
@@ -58,17 +72,13 @@ const RequestPad: React.FC<RequestPadProps> = ({ location, onBack, onComplete })
       // WhatsApp formatting
       const waPhone = targetPhone.startsWith('0') ? '234' + targetPhone.slice(1) : targetPhone;
       
-      // SMS formatting (standard phone number)
-      const smsPhone = targetPhone.startsWith('0') ? '+234' + targetPhone.slice(1) : (targetPhone.startsWith('234') ? '+' + targetPhone : targetPhone);
-
       const message = `*NEW PAD REQUEST*\n\n*Location:* ${location?.name}\n*Requester:* ${formData.name || 'Anonymous'}\n*Phone:* ${formData.phone}\n*Urgency:* ${formData.urgency.toUpperCase()}\n*Notes:* ${formData.notes || 'None'}\n\n_Sent via Pad Bank App_`;
       
       const encodedMessage = encodeURIComponent(message);
       
-      // Store these for the success screen
+      // Store for the success screen
       (window as any)._lastRequest = {
-        waUrl: `https://wa.me/${waPhone}?text=${encodedMessage}`,
-        smsUrl: `sms:${smsPhone}${navigator.userAgent.match(/iPhone/i) ? '&' : '?'}body=${encodedMessage}`
+        waUrl: `https://wa.me/${waPhone}?text=${encodedMessage}`
       };
 
       setStep(2);
@@ -118,16 +128,6 @@ const RequestPad: React.FC<RequestPadProps> = ({ location, onBack, onComplete })
           >
             <MessageSquare size={18} />
             Send via WhatsApp
-          </button>
-          <button 
-            onClick={() => {
-              const smsUrl = (window as any)._lastRequest?.smsUrl;
-              if (smsUrl) window.location.href = smsUrl;
-            }}
-            className="w-full py-4 bg-blue-600 text-white rounded-2xl font-bold shadow-lg shadow-blue-100 flex items-center justify-center gap-2"
-          >
-            <Send size={18} />
-            Send via SMS
           </button>
           <button 
             onClick={onComplete}

@@ -59,7 +59,9 @@ const MOCK_STORIES = [
     id: '1', 
     content: "Thanks to the community support, I was able to access free pads during my exams and focus on my studies without worry.",
     author: "Amina, 17",
-    image: "https://picsum.photos/seed/story/100/100"
+    image: "https://picsum.photos/seed/story/100/100",
+    uid: 'system',
+    createdAt: new Date('2024-01-01')
   }
 ];
 

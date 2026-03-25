@@ -57,9 +57,11 @@
         "id": { "type": "string" },
         "content": { "type": "string" },
         "author": { "type": "string" },
-        "image": { "type": "string" }
+        "image": { "type": "string" },
+        "uid": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
       },
-      "required": ["id", "content"]
+      "required": ["content", "author"]
     },
     "Partner": {
       "title": "Partner",

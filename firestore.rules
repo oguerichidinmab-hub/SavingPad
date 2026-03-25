@@ -112,6 +112,15 @@ service cloud.firestore {
              (!('type' in data) || (data.type is string && data.type.size() < 50));
     }
 
+    function isValidSuccessStory(data) {
+      return hasOnlyAllowedFields(data, ['id', 'content', 'author', 'image', 'uid', 'createdAt']) &&
+             data.content is string && data.content.size() > 0 && data.content.size() < 2000 &&
+             data.author is string && data.author.size() > 0 && data.author.size() < 100 &&
+             (!('image' in data) || (data.image is string && data.image.size() < 1000000)) &&
+             data.uid == request.auth.uid &&
+             data.createdAt is timestamp;
+    }
+
     // ===============================================================
     // Rules
     // ===============================================================
@@ -145,7 +154,8 @@ service cloud.firestore {
 
     match /success_stories/{storyId} {
       allow read: if true;
-      allow write: if isAdmin();
+      allow create: if isAuthenticated() && isValidSuccessStory(request.resource.data);
+      allow update, delete: if isAdmin() || (isAuthenticated() && resource.data.uid == request.auth.uid);
     }
 
     match /partners/{partnerId} {
