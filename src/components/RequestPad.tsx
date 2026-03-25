@@ -133,7 +133,7 @@ const RequestPad: React.FC<RequestPadProps> = ({ location, onBack, onComplete })
       {/* Pad Bank Image */}
       <div className="w-full h-48 rounded-[2rem] overflow-hidden shadow-sm border border-brand-100">
         <img 
-          src="/images/Pad Bank.jpeg" 
+          src="/images/Pad%20Bank.jpeg" 
           alt="Pad Bank" 
           className="w-full h-full object-cover"
           referrerPolicy="no-referrer"
