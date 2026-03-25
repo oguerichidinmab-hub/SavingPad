@@ -43,35 +43,50 @@ const Community: React.FC<CommunityProps> = ({ onDonate, onShareStory }) => {
     const groupsQuery = query(collection(db, 'community_groups'));
     const storiesQuery = query(collection(db, 'success_stories'), orderBy('createdAt', 'desc'));
 
+    const MOCK_GROUPS: Group[] = [
+      { id: 'mock-1', title: 'Managing PCOS Symptoms', members: '1.2k', iconType: 'heart' },
+      { id: 'mock-2', title: 'First Period Stories', members: '850', iconType: 'message' },
+      { id: 'mock-3', title: 'Sustainable Period Products', members: '2.4k', iconType: 'award' }
+    ];
+
+    const MOCK_STORIES: Story[] = [
+      { 
+        id: 'mock-story-1', 
+        content: "Thanks to the community support, I was able to access free pads during my exams and focus on my studies without worry.",
+        author: "Amina, 17",
+        image: "https://picsum.photos/seed/story/100/100"
+      }
+    ];
+
     const unsubscribeGroups = onSnapshot(groupsQuery, (snapshot) => {
       const groupsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Group));
-      if (groupsData.length > 0) setGroups(groupsData);
-      else {
-        // Fallback to mock data if empty
-        setGroups([
-          { id: '1', title: 'Managing PCOS Symptoms', members: '1.2k', iconType: 'heart' },
-          { id: '2', title: 'First Period Stories', members: '850', iconType: 'message' },
-          { id: '3', title: 'Sustainable Period Products', members: '2.4k', iconType: 'award' }
-        ]);
-      }
+      
+      // Merge with mock groups, avoiding duplicates by title
+      const combinedGroups = [...groupsData];
+      MOCK_GROUPS.forEach(mock => {
+        if (!groupsData.find(g => g.title === mock.title)) {
+          combinedGroups.push(mock);
+        }
+      });
+      
+      setGroups(combinedGroups);
     }, (error) => {
       handleFirestoreError(error, OperationType.LIST, 'community_groups');
     });
 
     const unsubscribeStories = onSnapshot(storiesQuery, (snapshot) => {
       const storiesData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Story));
-      if (storiesData.length > 0) setStories(storiesData);
-      else {
-        // Fallback to mock data if empty
-        setStories([
-          { 
-            id: '1', 
-            content: "Thanks to the community support, I was able to access free pads during my exams and focus on my studies without worry.",
-            author: "Amina, 17",
-            image: "https://picsum.photos/seed/story/100/100"
-          }
-        ]);
-      }
+      
+      // Merge with mock stories, avoiding duplicates by content
+      // New stories from Firestore come first (ordered by createdAt desc)
+      const combinedStories = [...storiesData];
+      MOCK_STORIES.forEach(mock => {
+        if (!storiesData.find(s => s.content === mock.content)) {
+          combinedStories.push(mock);
+        }
+      });
+
+      setStories(combinedStories);
       setLoading(false);
     }, (error) => {
       handleFirestoreError(error, OperationType.LIST, 'success_stories');
