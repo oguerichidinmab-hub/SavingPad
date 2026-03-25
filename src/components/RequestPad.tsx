@@ -130,6 +130,19 @@ const RequestPad: React.FC<RequestPadProps> = ({ location, onBack, onComplete })
 
   return (
     <div className="space-y-6">
+      {/* Pad Bank Image */}
+      <div className="w-full h-48 rounded-[2rem] overflow-hidden shadow-sm border border-brand-100">
+        <img 
+          src="/images/Pad Bank.jpeg" 
+          alt="Pad Bank" 
+          className="w-full h-full object-cover"
+          referrerPolicy="no-referrer"
+          onError={(e) => {
+            (e.target as HTMLImageElement).src = 'https://picsum.photos/seed/padbank/800/400';
+          }}
+        />
+      </div>
+
       {/* Location Summary */}
       <div className="bg-white p-6 rounded-[2rem] shadow-sm border border-brand-100">
         <div className="flex items-center gap-4 mb-4">

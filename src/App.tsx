@@ -78,59 +78,24 @@ export default function App() {
     return () => clearTimeout(timer);
   }, []);
 
+  const checkLocalProfile = () => {
+    const localProfile = localStorage.getItem('saving_pad_profile');
+    if (localProfile) {
+      setUserProfile(JSON.parse(localProfile));
+      setShowOnboarding(false);
+      setLoading(false);
+      return true;
+    }
+    return false;
+  };
+
+  // Auth listener
   useEffect(() => {
-    const checkLocalProfile = () => {
-      const localProfile = localStorage.getItem('saving_pad_profile');
-      if (localProfile) {
-        setUserProfile(JSON.parse(localProfile));
-        setShowOnboarding(false);
-        setLoading(false);
-        return true;
-      }
-      return false;
-    };
-
-    const unsubscribeAuth = onAuthStateChanged(auth, async (currentUser) => {
-      setLoading(true);
+    const unsubscribeAuth = onAuthStateChanged(auth, (currentUser) => {
+      setUser(currentUser);
       if (currentUser) {
-        setUser(currentUser);
-        seedDatabase(); // Attempt seeding when user logs in (only admin will succeed)
-        const userPath = `users/${currentUser.uid}`;
-        
-        // Use onSnapshot for real-time profile updates
-        const unsubscribeProfile = onSnapshot(doc(db, userPath), (docSnap) => {
-          if (docSnap.exists()) {
-            const data = docSnap.data();
-            setUserProfile(data);
-            // Sync to local storage as backup
-            localStorage.setItem('saving_pad_profile', JSON.stringify(data));
-            setShowOnboarding(false);
-          } else {
-            // If logged in but no profile, check local or show onboarding
-            if (!checkLocalProfile()) {
-              // Give it a moment to see if a profile is being created
-              setTimeout(() => {
-                if (!localStorage.getItem('saving_pad_profile')) {
-                  setShowOnboarding(true);
-                }
-              }, 2000);
-            }
-          }
-          setLoading(false);
-        }, (error: any) => {
-          console.error("Error fetching user doc:", error);
-          if (error.code === 'permission-denied') {
-            handleFirestoreError(error, OperationType.GET, userPath);
-          }
-          if (!checkLocalProfile()) {
-            setShowOnboarding(true);
-          }
-          setLoading(false);
-        });
-
-        return () => unsubscribeProfile();
+        seedDatabase(); // Only admin succeeds
       } else {
-        setUser(null);
         if (!checkLocalProfile()) {
           setUserProfile(null);
           setShowOnboarding(true);
@@ -138,9 +103,45 @@ export default function App() {
         setLoading(false);
       }
     });
-
     return () => unsubscribeAuth();
   }, []);
+
+  // Profile listener
+  useEffect(() => {
+    if (!user) return;
+
+    setLoading(true);
+    const userPath = `users/${user.uid}`;
+    
+    const unsubscribeProfile = onSnapshot(doc(db, userPath), (docSnap) => {
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        setUserProfile(data);
+        localStorage.setItem('saving_pad_profile', JSON.stringify(data));
+        setShowOnboarding(false);
+      } else {
+        if (!checkLocalProfile()) {
+          setTimeout(() => {
+            if (!localStorage.getItem('saving_pad_profile')) {
+              setShowOnboarding(true);
+            }
+          }, 2000);
+        }
+      }
+      setLoading(false);
+    }, (error: any) => {
+      console.error("Error fetching user doc:", error);
+      if (error.code === 'permission-denied') {
+        handleFirestoreError(error, OperationType.GET, userPath);
+      }
+      if (!checkLocalProfile()) {
+        setShowOnboarding(true);
+      }
+      setLoading(false);
+    });
+
+    return () => unsubscribeProfile();
+  }, [user]);
 
   const calculateNextPeriod = () => {
     if (!userProfile?.lastPeriodStart || userProfile.lastPeriodStart === "" || !userProfile?.cycleLength) return null;
