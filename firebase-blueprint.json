@@ -1,0 +1,101 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile and preferences",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "displayName": { "type": "string" },
+        "cycleLength": { "type": "integer", "description": "Average length of menstrual cycle in days" },
+        "periodLength": { "type": "integer", "description": "Average length of period in days" },
+        "lastPeriodStart": { "type": "string", "format": "date", "description": "Start date of the last period" },
+        "preferences": {
+          "type": "object",
+          "properties": {
+            "notificationsEnabled": { "type": "boolean" },
+            "padReminders": { "type": "boolean" }
+          }
+        },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "email"]
+    },
+    "PeriodLog": {
+      "title": "Period Log",
+      "description": "Logs of menstrual cycles",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "startDate": { "type": "string", "format": "date" },
+        "endDate": { "type": "string", "format": "date" },
+        "symptoms": { "type": "array", "items": { "type": "string" } },
+        "mood": { "type": "string" },
+        "type": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "startDate"]
+    },
+    "CommunityGroup": {
+      "title": "Community Group",
+      "description": "Discussion groups for the community",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "members": { "type": "string" },
+        "iconType": { "type": "string" }
+      },
+      "required": ["id", "title"]
+    },
+    "SuccessStory": {
+      "title": "Success Story",
+      "description": "User success stories",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "content": { "type": "string" },
+        "author": { "type": "string" },
+        "image": { "type": "string" }
+      },
+      "required": ["id", "content"]
+    },
+    "Partner": {
+      "title": "Partner",
+      "description": "Organizations that donate pads or provide education",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "logo": { "type": "string" },
+        "description": { "type": "string" },
+        "website": { "type": "string" },
+        "type": { "type": "string", "enum": ["donor", "educator", "both"] }
+      },
+      "required": ["id", "name"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User profile documents"
+    },
+    "/users/{userId}/logs/{logId}": {
+      "schema": "PeriodLog",
+      "description": "Individual period logs for a user"
+    },
+    "/community_groups/{groupId}": {
+      "schema": "CommunityGroup",
+      "description": "Public community groups"
+    },
+    "/success_stories/{storyId}": {
+      "schema": "SuccessStory",
+      "description": "Public success stories"
+    },
+    "/partners/{partnerId}": {
+      "schema": "Partner",
+      "description": "Partner organizations"
+    }
+  }
+}
