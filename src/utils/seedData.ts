@@ -1,18 +1,7 @@
 import { db, auth } from '../firebase';
-import { collection, doc, setDoc, getDocs, query, limit } from 'firebase/firestore';
+import { collection, doc, setDoc, getDocs, query, limit, deleteDoc } from 'firebase/firestore';
 
 const MOCK_LOCATIONS = [
-  {
-    id: 'techbdi-kuje',
-    name: 'TECHBDI',
-    address: 'Pasali Extension, Kuje, Abuja',
-    type: 'NGO',
-    lat: 8.8800,
-    lng: 7.2300,
-    phone: '09032455620 (Miss Ore)',
-    hours: 'Mon - Fri (9:00 AM - 5:00 PM)',
-    description: 'Non-governmental organization providing community support and empowerment. Located in the Pasali Extension area of Kuje.'
-  },
   {
     id: 'fct-special-needs',
     name: 'FCT School for Children with Special Needs',
@@ -94,6 +83,9 @@ export const seedDatabase = async () => {
       for (const loc of MOCK_LOCATIONS) {
         await setDoc(doc(db, 'locations', loc.id), loc);
       }
+    } else {
+      // Cleanup: Remove TECHBDI if it was previously seeded
+      await deleteDoc(doc(db, 'locations', 'techbdi-kuje'));
     }
 
     // Seed Groups

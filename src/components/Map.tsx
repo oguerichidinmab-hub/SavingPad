@@ -42,17 +42,6 @@ interface Location {
 
 const MOCK_LOCATIONS: Location[] = [
   {
-    id: 'techbdi-kuje',
-    name: 'TECHBDI',
-    address: 'Pasali Extension, Kuje, Abuja',
-    type: 'NGO',
-    lat: 8.8800,
-    lng: 7.2300,
-    phone: '09032455620 (Miss Ore)',
-    hours: 'Mon - Fri (9:00 AM - 5:00 PM)',
-    description: 'Non-governmental organization providing community support and empowerment. Located in the Pasali Extension area of Kuje.'
-  },
-  {
     id: 'fct-special-needs',
     name: 'FCT School for Children with Special Needs',
     address: 'GGSSS Road, Paseli, Kuje, Abuja',

@@ -76,6 +76,42 @@ const ARTICLES: Article[] = [
     image: 'https://picsum.photos/seed/equity/400/200',
     icon: <BookOpen className="text-emerald-500" />,
     content: 'Access to menstrual products, private toilets, water, and menstrual health education helps girls stay healthy, safe, and in school. It is a fundamental right.'
+  },
+  {
+    id: '7',
+    title: 'How to track your cycle',
+    category: 'Basics',
+    readTime: '3 min',
+    image: 'https://picsum.photos/seed/tracking/400/200',
+    icon: <PlayCircle className="text-brand-500" />,
+    content: "Tracking your cycle helps you understand your body's patterns. You can use an app like Saving Pad, a calendar, or a journal. Note the first day of your period (Day 1) and how long it lasts. Over a few months, you'll see your average cycle length, which helps predict your next period and understand your fertile window."
+  },
+  {
+    id: '8',
+    title: 'Understanding your body',
+    category: 'Basics',
+    readTime: '4 min',
+    image: 'https://picsum.photos/seed/body/400/200',
+    icon: <Sparkles className="text-pink-500" />,
+    content: "Your body goes through amazing changes every month. The menstrual cycle is controlled by hormones like estrogen and progesterone. These hormones prepare your uterus for a possible pregnancy. If pregnancy doesn't occur, the lining is shed as your period. It's a sign of a healthy, functioning reproductive system."
+  },
+  {
+    id: '9',
+    title: 'The 4 phases of your cycle',
+    category: 'Health',
+    readTime: '5 min',
+    image: 'https://picsum.photos/seed/phases/400/200',
+    icon: <Droplets className="text-brand-600" />,
+    content: "Your cycle has four main phases: Menstrual (your period), Follicular (preparing for ovulation), Ovulation (releasing an egg), and Luteal (preparing for the next period). Each phase brings different energy levels and feelings. Learning these phases helps you plan your activities and self-care better."
+  },
+  {
+    id: '10',
+    title: 'Hormones and your mood',
+    category: 'Health',
+    readTime: '4 min',
+    image: 'https://picsum.photos/seed/mood/400/200',
+    icon: <Heart className="text-brand-400" />,
+    content: "Hormonal shifts throughout your cycle can affect your emotions, energy, and even your skin. During the Luteal phase (before your period), you might feel more sensitive or tired—this is normal! Tracking these changes helps you be kinder to yourself and understand that your feelings are often tied to your biological rhythm."
   }
 ];
 
@@ -151,15 +187,20 @@ const Education: React.FC = () => {
           {/* Featured Video Placeholder */}
           <div className="bg-brand-900 rounded-[2.5rem] p-8 text-white relative overflow-hidden group cursor-pointer shadow-xl shadow-brand-900/20">
             <div className="relative z-10">
-              <span className="px-3 py-1 bg-white/10 backdrop-blur-md rounded-full text-[10px] font-bold uppercase tracking-widest mb-4 inline-block border border-white/10">
-                Featured Video
-              </span>
+              <div className="flex items-center gap-2 mb-4">
+                <span className="px-3 py-1 bg-white/10 backdrop-blur-md rounded-full text-[10px] font-bold uppercase tracking-widest inline-block border border-white/10">
+                  Featured Video
+                </span>
+                <span className="px-2 py-1 bg-brand-500 rounded-lg text-[8px] font-bold text-white uppercase tracking-wider">
+                  Coming Soon
+                </span>
+              </div>
               <h3 className="text-2xl font-bold mb-2 leading-tight">Cycle Tracking 101</h3>
               <p className="text-brand-100/70 text-sm mb-8 max-w-[220px] leading-relaxed">
-                Master the art of tracking your cycle with our comprehensive video guide.
+                Master the art of tracking your cycle with our upcoming comprehensive video guide.
               </p>
-              <div className="flex items-center gap-3 font-bold text-sm bg-white text-brand-900 w-fit px-6 py-3 rounded-2xl shadow-lg group-hover:bg-brand-50 transition-colors">
-                <PlayCircle size={20} fill="currentColor" className="text-brand-600" /> Watch Now
+              <div className="flex items-center gap-3 font-bold text-sm bg-white/20 backdrop-blur-md text-white w-fit px-6 py-3 rounded-2xl border border-white/10 transition-colors">
+                <PlayCircle size={20} className="text-white" /> Notify Me
               </div>
             </div>
             <div className="absolute top-0 right-0 w-2/3 h-full bg-gradient-to-l from-brand-500/30 to-transparent" />
