@@ -50,20 +50,27 @@ const RequestPad: React.FC<RequestPadProps> = ({ location, onBack, onComplete })
         });
       }
 
-      // 2. Prepare SMS
+      // 2. Prepare Message Content
       const rawPhone = location?.phone || '';
       const phoneMatch = rawPhone.match(/(\+234|0)\d{10}/);
       const targetPhone = phoneMatch ? phoneMatch[0].replace(/[^\d]/g, '') : '';
-      const smsPhone = targetPhone.startsWith('0') ? '+234' + targetPhone.slice(1) : targetPhone;
+      
+      // WhatsApp formatting
+      const waPhone = targetPhone.startsWith('0') ? '234' + targetPhone.slice(1) : targetPhone;
+      
+      // SMS formatting (standard phone number)
+      const smsPhone = targetPhone.startsWith('0') ? '+234' + targetPhone.slice(1) : (targetPhone.startsWith('234') ? '+' + targetPhone : targetPhone);
 
-      const message = `NEW PAD REQUEST\n\nLocation: ${location?.name}\nRequester: ${formData.name || 'Anonymous'}\nPhone: ${formData.phone}\nUrgency: ${formData.urgency.toUpperCase()}\nNotes: ${formData.notes || 'None'}\n\nSent via Pad Bank App`;
+      const message = `*NEW PAD REQUEST*\n\n*Location:* ${location?.name}\n*Requester:* ${formData.name || 'Anonymous'}\n*Phone:* ${formData.phone}\n*Urgency:* ${formData.urgency.toUpperCase()}\n*Notes:* ${formData.notes || 'None'}\n\n_Sent via Pad Bank App_`;
       
       const encodedMessage = encodeURIComponent(message);
-      const smsUrl = `sms:${smsPhone}?body=${encodedMessage}`;
-
-      // Open SMS app
-      window.location.href = smsUrl;
       
+      // Store these for the success screen
+      (window as any)._lastRequest = {
+        waUrl: `https://wa.me/${waPhone}?text=${encodedMessage}`,
+        smsUrl: `sms:${smsPhone}${navigator.userAgent.match(/iPhone/i) ? '&' : '?'}body=${encodedMessage}`
+      };
+
       setStep(2);
     } catch (error) {
       console.error("Error submitting request:", error);
@@ -104,17 +111,22 @@ const RequestPad: React.FC<RequestPadProps> = ({ location, onBack, onComplete })
         <div className="w-full space-y-3">
           <button 
             onClick={() => {
-              const rawPhone = location?.phone || '';
-              const phoneMatch = rawPhone.match(/(\+234|0)\d{10}/);
-              const targetPhone = phoneMatch ? phoneMatch[0].replace(/[^\d]/g, '') : '';
-              const smsPhone = targetPhone.startsWith('0') ? '+234' + targetPhone.slice(1) : targetPhone;
-              const message = `NEW PAD REQUEST\n\nLocation: ${location?.name}\nRequester: ${formData.name || 'Anonymous'}\nPhone: ${formData.phone}\nUrgency: ${formData.urgency.toUpperCase()}\nNotes: ${formData.notes || 'None'}\n\nSent via Pad Bank App`;
-              const encodedMessage = encodeURIComponent(message);
-              window.location.href = `sms:${smsPhone}?body=${encodedMessage}`;
+              const waUrl = (window as any)._lastRequest?.waUrl;
+              if (waUrl) window.open(waUrl, '_blank');
             }}
             className="w-full py-4 bg-emerald-600 text-white rounded-2xl font-bold shadow-lg shadow-emerald-100 flex items-center justify-center gap-2"
           >
             <MessageSquare size={18} />
+            Send via WhatsApp
+          </button>
+          <button 
+            onClick={() => {
+              const smsUrl = (window as any)._lastRequest?.smsUrl;
+              if (smsUrl) window.location.href = smsUrl;
+            }}
+            className="w-full py-4 bg-blue-600 text-white rounded-2xl font-bold shadow-lg shadow-blue-100 flex items-center justify-center gap-2"
+          >
+            <Send size={18} />
             Send via SMS
           </button>
           <button 
