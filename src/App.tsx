@@ -51,6 +51,7 @@ export default function App() {
   const [showSplash, setShowSplash] = useState(true);
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [isEditingCycle, setIsEditingCycle] = useState(false);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
   const navigateTo = (view: View, data?: any) => {
     if (view === 'request-pad') setSelectedLocation(data);
@@ -492,14 +493,7 @@ export default function App() {
                   <ChevronRight size={20} className="text-brand-300" />
                 </button>
                 <button 
-                  onClick={() => {
-                    if (userProfile?.isGuest) {
-                      localStorage.removeItem('saving_pad_profile');
-                      window.location.reload();
-                    } else {
-                      signOut(auth);
-                    }
-                  }}
+                  onClick={() => setShowLogoutConfirm(true)}
                   className="w-full p-6 flex items-center justify-between hover:bg-red-50 transition-colors group"
                 >
                   <div className="flex items-center gap-4">
@@ -599,6 +593,38 @@ export default function App() {
               <span className="text-[8px] font-bold uppercase tracking-tighter">Me</span>
             </button>
           </nav>
+
+          {/* Logout Confirmation Modal */}
+          {showLogoutConfirm && (
+            <div className="fixed inset-0 z-[100] flex items-center justify-center p-6">
+              <div className="absolute inset-0 bg-brand-900/40 backdrop-blur-sm" onClick={() => setShowLogoutConfirm(false)} />
+              <div className="bg-white w-full max-w-xs rounded-[2.5rem] p-8 relative z-10 shadow-2xl animate-in zoom-in-95 duration-200">
+                <div className="w-16 h-16 bg-red-50 text-red-500 rounded-3xl flex items-center justify-center mx-auto mb-6">
+                  <LogOut size={32} />
+                </div>
+                <h3 className="text-xl font-bold text-brand-900 text-center mb-2">Log Out?</h3>
+                <p className="text-brand-600 text-center text-sm mb-8">Are you sure you want to log out of Saving Pad?</p>
+                <div className="grid grid-cols-2 gap-3">
+                  <button 
+                    onClick={() => setShowLogoutConfirm(false)}
+                    className="py-4 bg-brand-50 text-brand-600 rounded-2xl font-bold text-sm hover:bg-brand-100 transition-colors"
+                  >
+                    No, Stay
+                  </button>
+                  <button 
+                    onClick={async () => {
+                      localStorage.removeItem('saving_pad_profile');
+                      await signOut(auth);
+                      window.location.reload();
+                    }}
+                    className="py-4 bg-red-500 text-white rounded-2xl font-bold text-sm shadow-lg shadow-red-200 hover:bg-red-600 transition-colors"
+                  >
+                    Yes, Log Out
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </ErrorBoundary>

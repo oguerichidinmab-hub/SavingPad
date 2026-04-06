@@ -61,7 +61,7 @@ const MOCK_LOCATIONS: Location[] = [
     lng: 7.2350,
     phone: '08055270565 (Onoja John Edache) / 0803 628 6622',
     hours: 'Day & Boarding (Closes 4:00 PM)',
-    description: 'Government-owned institution for students with hearing impairments. Menstrual hygiene support provided by partners like Sus Pads.'
+    description: 'Government-owned institution for students with hearing impairments.'
   },
   {
     id: 'jabbi-blind',
