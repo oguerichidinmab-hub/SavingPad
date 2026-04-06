@@ -26,6 +26,9 @@ const SplashScreen: React.FC = () => {
       >
         <h1 className="text-4xl font-bold text-white tracking-tight">Saving Pad</h1>
         <p className="text-brand-100 mt-2 font-medium opacity-80">Empowering every girl</p>
+        <p className="text-[10px] text-white/40 font-bold uppercase tracking-[0.2em] mt-8">
+          Made by Team STRIM Girls
+        </p>
       </motion.div>
       
       {/* Decorative background elements */}

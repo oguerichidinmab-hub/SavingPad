@@ -15,7 +15,12 @@ import {
 } from 'lucide-react';
 import { auth, db } from '../firebase';
 import { doc, setDoc, serverTimestamp, getDoc } from 'firebase/firestore';
-import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signInAnonymously } from 'firebase/auth';
+import { 
+  createUserWithEmailAndPassword, 
+  signInWithEmailAndPassword, 
+  signInAnonymously,
+  sendPasswordResetEmail
+} from 'firebase/auth';
 import { handleFirestoreError, OperationType } from '../utils/errorHandlers';
 
 interface OnboardingProps {
@@ -32,10 +37,13 @@ const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
     padReminders: true,
     username: '',
     password: '',
+    resetEmail: '',
     isLogin: false,
+    isResetting: false,
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
 
   const nextStep = () => {
     if (step === 3) { // Account step
@@ -174,6 +182,31 @@ const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
     }
   };
 
+  const handleResetPassword = async () => {
+    if (!formData.resetEmail) {
+      setError("Please enter your email address");
+      return;
+    }
+    setLoading(true);
+    setError(null);
+    setSuccess(null);
+    try {
+      await sendPasswordResetEmail(auth, formData.resetEmail);
+      setSuccess("Reset link sent! Check your inbox.");
+    } catch (err: any) {
+      console.error("Reset error:", err);
+      let message = "Could not send reset link.";
+      if (err.code === 'auth/user-not-found') {
+        message = "No account found with this email.";
+      } else if (err.code === 'auth/invalid-email') {
+        message = "Please enter a valid email address.";
+      }
+      setError(message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const steps = [
     // Step 0: Welcome
     <div className="flex flex-col items-center text-center space-y-6">
@@ -184,12 +217,17 @@ const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
       <p className="text-brand-700 max-w-xs">
         Your friendly companion for menstrual health, cycle tracking, and finding resources nearby.
       </p>
-      <button 
-        onClick={nextStep}
-        className="w-full py-4 bg-brand-600 text-white rounded-2xl font-semibold shadow-lg shadow-brand-200 hover:bg-brand-700 transition-colors flex items-center justify-center gap-2"
-      >
-        Let's Get Started <ChevronRight size={20} />
-      </button>
+      <div className="space-y-4 w-full">
+        <button 
+          onClick={nextStep}
+          className="w-full py-4 bg-brand-600 text-white rounded-2xl font-semibold shadow-lg shadow-brand-200 hover:bg-brand-700 transition-colors flex items-center justify-center gap-2"
+        >
+          Let's Get Started <ChevronRight size={20} />
+        </button>
+        <p className="text-[10px] text-brand-400 font-bold uppercase tracking-widest">
+          Made by Team STRIM Girls
+        </p>
+      </div>
     </div>,
 
     // Step 1: Tutorial - Tracking
@@ -226,52 +264,109 @@ const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
     <div className="flex flex-col space-y-6">
       <div className="text-center">
         <h2 className="text-2xl font-bold text-brand-900">
-          {formData.isLogin ? 'Welcome Back' : 'Create Account'}
+          {formData.isResetting ? 'Reset Password' : (formData.isLogin ? 'Welcome Back' : 'Create Account')}
         </h2>
         <p className="text-brand-600 text-sm">
-          {formData.isLogin ? 'Log in to sync your data' : 'Save your progress and sync across devices'}
+          {formData.isResetting 
+            ? 'Enter your email to receive a reset link' 
+            : (formData.isLogin ? 'Log in to sync your data' : 'Save your progress and sync across devices')}
         </p>
       </div>
 
       <div className="space-y-4">
-        {error && (
-          <div className="p-3 bg-red-50 text-red-600 text-xs rounded-xl border border-red-100 flex items-center gap-2">
+        {(error || success) && (
+          <div className={`p-3 text-xs rounded-xl border flex items-center gap-2 ${
+            error ? 'bg-red-50 text-red-600 border-red-100' : 'bg-green-50 text-green-600 border-green-100'
+          }`}>
             <Info size={14} />
-            {error}
+            {error || success}
           </div>
         )}
-        <div className="relative">
-          <User className="absolute left-4 top-1/2 -translate-y-1/2 text-brand-400" size={20} />
-          <input 
-            type="text" 
-            placeholder="Username"
-            value={formData.username}
-            onChange={(e) => setFormData({...formData, username: e.target.value})}
-            className="w-full p-4 pl-12 bg-white border border-brand-200 rounded-xl focus:ring-2 focus:ring-brand-500 outline-none"
-          />
-        </div>
-        <div className="relative">
-          <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-brand-400" size={20} />
-          <input 
-            type="password" 
-            placeholder="Password"
-            value={formData.password}
-            onChange={(e) => setFormData({...formData, password: e.target.value})}
-            className="w-full p-4 pl-12 bg-white border border-brand-200 rounded-xl focus:ring-2 focus:ring-brand-500 outline-none"
-          />
-        </div>
-        <button 
-          onClick={() => setFormData({...formData, isLogin: !formData.isLogin})}
-          className="text-xs font-bold text-brand-600 hover:text-brand-700 transition-colors"
-        >
-          {formData.isLogin ? "Don't have an account? Sign Up" : "Already have an account? Log In"}
-        </button>
+
+        {formData.isResetting ? (
+          <div className="space-y-4">
+            <div className="relative">
+              <User className="absolute left-4 top-1/2 -translate-y-1/2 text-brand-400" size={20} />
+              <input 
+                type="email" 
+                placeholder="Email Address"
+                value={formData.resetEmail}
+                onChange={(e) => setFormData({...formData, resetEmail: e.target.value})}
+                className="w-full p-4 pl-12 bg-white border border-brand-200 rounded-xl focus:ring-2 focus:ring-brand-500 outline-none"
+              />
+            </div>
+            <button 
+              onClick={handleResetPassword}
+              disabled={loading}
+              className="w-full py-4 bg-brand-600 text-white rounded-2xl font-semibold shadow-lg shadow-brand-200 hover:bg-brand-700 transition-colors"
+            >
+              {loading ? 'Sending...' : 'Send Reset Link'}
+            </button>
+            <button 
+              onClick={() => {
+                setFormData({...formData, isResetting: false});
+                setError(null);
+                setSuccess(null);
+              }}
+              className="w-full text-xs font-bold text-brand-600 hover:text-brand-700 transition-colors"
+            >
+              Back to Sign In
+            </button>
+          </div>
+        ) : (
+          <>
+            <div className="relative">
+              <User className="absolute left-4 top-1/2 -translate-y-1/2 text-brand-400" size={20} />
+              <input 
+                type="text" 
+                placeholder="Username"
+                value={formData.username}
+                onChange={(e) => setFormData({...formData, username: e.target.value})}
+                className="w-full p-4 pl-12 bg-white border border-brand-200 rounded-xl focus:ring-2 focus:ring-brand-500 outline-none"
+              />
+            </div>
+            <div className="relative">
+              <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-brand-400" size={20} />
+              <input 
+                type="password" 
+                placeholder="Password"
+                value={formData.password}
+                onChange={(e) => setFormData({...formData, password: e.target.value})}
+                className="w-full p-4 pl-12 bg-white border border-brand-200 rounded-xl focus:ring-2 focus:ring-brand-500 outline-none"
+              />
+              {formData.isLogin && (
+                <button 
+                  onClick={() => {
+                    setFormData({...formData, isResetting: true});
+                    setError(null);
+                    setSuccess(null);
+                  }}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-bold text-brand-400 hover:text-brand-600"
+                >
+                  Forgot?
+                </button>
+              )}
+            </div>
+            <button 
+              onClick={() => {
+                setFormData({...formData, isLogin: !formData.isLogin});
+                setError(null);
+                setSuccess(null);
+              }}
+              className="text-xs font-bold text-brand-600 hover:text-brand-700 transition-colors"
+            >
+              {formData.isLogin ? "Don't have an account? Sign Up" : "Already have an account? Log In"}
+            </button>
+          </>
+        )}
       </div>
 
-      <div className="flex gap-4 w-full pt-4">
-        <button onClick={prevStep} className="flex-1 py-4 bg-white border border-brand-200 text-brand-600 rounded-2xl font-semibold">Back</button>
-        <button onClick={nextStep} className="flex-1 py-4 bg-brand-600 text-white rounded-2xl font-semibold">Next</button>
-      </div>
+      {!formData.isResetting && (
+        <div className="flex gap-4 w-full pt-4">
+          <button onClick={prevStep} className="flex-1 py-4 bg-white border border-brand-200 text-brand-600 rounded-2xl font-semibold">Back</button>
+          <button onClick={nextStep} className="flex-1 py-4 bg-brand-600 text-white rounded-2xl font-semibold">Next</button>
+        </div>
+      )}
     </div>,
 
     // Step 4: Cycle Preferences
