@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
-import { motion } from 'motion/react';
+import { motion, AnimatePresence } from 'motion/react';
 import { 
   Heart, 
   Send, 
   CheckCircle2, 
   MessageSquare,
   User,
-  Camera
+  Camera,
+  Info
 } from 'lucide-react';
 import { db, auth } from '../firebase';
 import { signInAnonymously } from 'firebase/auth';
@@ -21,6 +22,7 @@ interface ShareStoryProps {
 const ShareStory: React.FC<ShareStoryProps> = ({ onBack, onComplete }) => {
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     name: '',
     age: '',
@@ -41,9 +43,10 @@ const ShareStory: React.FC<ShareStoryProps> = ({ onBack, onComplete }) => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError(null);
     
     if (!formData.age) {
-      alert("Please include your age.");
+      setError("Please include your age.");
       return;
     }
 
@@ -82,19 +85,19 @@ const ShareStory: React.FC<ShareStoryProps> = ({ onBack, onComplete }) => {
         createdAt: serverTimestamp()
       });
       setSubmitted(true);
-    } catch (error: any) {
-      console.error("Error sharing story:", error);
+    } catch (err: any) {
+      console.error("Error sharing story:", err);
       
       // If it's our custom error, show it directly
-      if (error.message && (error.message.includes("signed in") || error.message.includes("failed"))) {
-        alert(error.message);
-      } else if (error.message && error.message.includes("permissions")) {
-        alert("Permission denied. Please ensure you are signed in from your profile.");
+      if (err.message && (err.message.includes("signed in") || err.message.includes("failed") || err.message.includes("disabled"))) {
+        setError(err.message);
+      } else if (err.message && err.message.includes("permissions")) {
+        setError("Permission denied. Please ensure you are signed in from your profile.");
       } else {
-        alert("Failed to share story. Please check your connection and try again.");
+        setError("Failed to share story. Please check your connection and try again.");
       }
       
-      handleFirestoreError(error, OperationType.WRITE, 'success_stories');
+      handleFirestoreError(err, OperationType.WRITE, 'success_stories');
     } finally {
       setLoading(false);
     }
@@ -155,6 +158,29 @@ const ShareStory: React.FC<ShareStoryProps> = ({ onBack, onComplete }) => {
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-4">
+        <AnimatePresence mode="wait">
+          {error && (
+            <motion.div 
+              initial={{ opacity: 0, y: -10, scale: 0.95 }}
+              animate={{ 
+                opacity: 1, 
+                y: 0, 
+                scale: 1,
+                x: [0, -5, 5, -5, 5, 0]
+              }}
+              transition={{ 
+                duration: 0.4,
+                x: { duration: 0.4, ease: "easeInOut" }
+              }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="p-3 text-xs rounded-xl border border-red-100 bg-red-50 text-red-600 flex items-center gap-2"
+            >
+              <Info size={14} />
+              {error}
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         <div className="grid grid-cols-3 gap-3">
           <div className="col-span-2 space-y-2">
             <label className="text-[10px] font-bold text-brand-400 uppercase tracking-wider ml-1">Your Name (Optional)</label>

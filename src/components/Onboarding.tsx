@@ -63,6 +63,11 @@ const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
         setError("Password must be at least 6 characters");
         return;
       }
+      
+      if (formData.isLogin) {
+        handleLogin();
+        return;
+      }
     }
     setError(null);
     setStep((s) => s + 1);
@@ -72,19 +77,67 @@ const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
     setStep((s) => s - 1);
   };
 
+  const handleLogin = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const email = `${formData.username.trim().toLowerCase()}@savingpad.app`;
+      const userCredential = await signInWithEmailAndPassword(auth, email, formData.password);
+      const user = userCredential.user;
+      
+      // Fetch existing profile
+      const docSnap = await getDoc(doc(db, 'users', user.uid));
+      if (docSnap.exists()) {
+        localStorage.setItem('saving_pad_profile', JSON.stringify(docSnap.data()));
+      } else {
+        // Fallback if no profile exists
+        const userData = {
+          uid: user.uid,
+          email: user.email,
+          displayName: formData.username.trim(),
+          cycleLength: 28,
+          periodLength: 5,
+          lastPeriodStart: new Date().toISOString().split('T')[0],
+          preferences: {
+            notificationsEnabled: true,
+            padReminders: true,
+          },
+          isGuest: false,
+          createdAt: new Date().toISOString(),
+        };
+        localStorage.setItem('saving_pad_profile', JSON.stringify(userData));
+        await setDoc(doc(db, 'users', user.uid), {
+          ...userData,
+          createdAt: serverTimestamp()
+        });
+      }
+      onComplete();
+    } catch (err: any) {
+      console.warn("Auth error:", err.code);
+      let message = "An error occurred during authentication.";
+      if (err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') {
+        message = "Incorrect username or password. Please try again.";
+      } else if (err.code === 'auth/user-not-found') {
+        message = "No account found with this username. Try signing up!";
+      } else if (err.code === 'auth/network-request-failed') {
+        message = "Network error. Please check your internet connection.";
+      } else if (err.code === 'auth/too-many-requests') {
+        message = "Too many failed attempts. Please try again later.";
+      } else if (err.message) {
+        message = err.message;
+      }
+      setError(message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleFinish = async () => {
     setLoading(true);
     setError(null);
     try {
       const email = `${formData.username.trim().toLowerCase()}@savingpad.app`;
-      let userCredential;
-
-      if (formData.isLogin) {
-        userCredential = await signInWithEmailAndPassword(auth, email, formData.password);
-      } else {
-        userCredential = await createUserWithEmailAndPassword(auth, email, formData.password);
-      }
-
+      const userCredential = await createUserWithEmailAndPassword(auth, email, formData.password);
       const user = userCredential.user;
       
       const userData = {
@@ -115,15 +168,13 @@ const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
       
       onComplete();
     } catch (err: any) {
-      console.error("Auth error:", err);
+      console.warn("Auth error:", err.code);
       let message = "An error occurred during authentication.";
       
       if (err.code === 'auth/email-already-in-use') {
-        message = "Username already taken. Try logging in instead.";
-      } else if (err.code === 'auth/wrong-password') {
-        message = "Incorrect password.";
-      } else if (err.code === 'auth/user-not-found') {
-        message = "User not found. Try signing up.";
+        message = "Username already taken. Please log in instead.";
+        setFormData(prev => ({ ...prev, isLogin: true }));
+        setStep(3);
       } else if (err.code === 'auth/network-request-failed') {
         message = "Network error. Please check your internet connection.";
       } else if (err.message) {
@@ -274,14 +325,30 @@ const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
       </div>
 
       <div className="space-y-4">
-        {(error || success) && (
-          <div className={`p-3 text-xs rounded-xl border flex items-center gap-2 ${
-            error ? 'bg-red-50 text-red-600 border-red-100' : 'bg-green-50 text-green-600 border-green-100'
-          }`}>
-            <Info size={14} />
-            {error || success}
-          </div>
-        )}
+        <AnimatePresence mode="wait">
+          {(error || success) && (
+            <motion.div 
+              initial={{ opacity: 0, y: -10, scale: 0.95 }}
+              animate={{ 
+                opacity: 1, 
+                y: 0, 
+                scale: 1,
+                x: error ? [0, -5, 5, -5, 5, 0] : 0
+              }}
+              transition={{ 
+                duration: 0.4,
+                x: { duration: 0.4, ease: "easeInOut" }
+              }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className={`p-3 text-xs rounded-xl border flex items-center gap-2 ${
+                error ? 'bg-red-50 text-red-600 border-red-100' : 'bg-green-50 text-green-600 border-green-100'
+              }`}
+            >
+              <Info size={14} />
+              {error || success}
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {formData.isResetting ? (
           <div className="space-y-4">
@@ -364,7 +431,13 @@ const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
       {!formData.isResetting && (
         <div className="flex gap-4 w-full pt-4">
           <button onClick={prevStep} className="flex-1 py-4 bg-white border border-brand-200 text-brand-600 rounded-2xl font-semibold">Back</button>
-          <button onClick={nextStep} className="flex-1 py-4 bg-brand-600 text-white rounded-2xl font-semibold">Next</button>
+          <button 
+            onClick={nextStep} 
+            disabled={loading}
+            className="flex-1 py-4 bg-brand-600 text-white rounded-2xl font-semibold disabled:opacity-50 flex items-center justify-center"
+          >
+            {loading ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : (formData.isLogin ? 'Log In' : 'Next')}
+          </button>
         </div>
       )}
     </div>,
@@ -418,6 +491,29 @@ const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
         <h2 className="text-2xl font-bold text-brand-900">Stay Updated</h2>
         <p className="text-brand-600 text-sm">Choose how you'd like to be reminded.</p>
       </div>
+
+      <AnimatePresence mode="wait">
+        {error && (
+          <motion.div 
+            initial={{ opacity: 0, y: -10, scale: 0.95 }}
+            animate={{ 
+              opacity: 1, 
+              y: 0, 
+              scale: 1,
+              x: [0, -5, 5, -5, 5, 0]
+            }}
+            transition={{ 
+              duration: 0.4,
+              x: { duration: 0.4, ease: "easeInOut" }
+            }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            className="p-3 text-xs rounded-xl border flex items-center gap-2 bg-red-50 text-red-600 border-red-100"
+          >
+            <Info size={14} />
+            {error}
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <div className="space-y-4">
         <div className="flex items-center justify-between p-4 bg-white border border-brand-200 rounded-xl">

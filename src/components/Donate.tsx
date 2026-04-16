@@ -22,14 +22,23 @@ interface DonateProps {
 const Donate: React.FC<DonateProps> = ({ onBack }) => {
   const [amount, setAmount] = useState<number | null>(null);
   const [customAmount, setCustomAmount] = useState('');
-  const [step, setStep] = useState<'amount' | 'method' | 'transfer' | 'paystack' | 'processing' | 'success'>('amount');
-  const [copied, setCopied] = useState(false);
-  const [paymentMethod, setPaymentMethod] = useState<'transfer' | 'paystack' | null>(null);
+  const [step, setStep] = useState<'amount' | 'transfer' | 'whatsapp'>('amount');
+  const [copiedUSD, setCopiedUSD] = useState(false);
+  const [copiedNaira, setCopiedNaira] = useState(false);
 
   const bankDetails = {
-    accountNumber: '0164715566',
-    bankName: 'UNION BANK',
-    accountName: 'OGUERI BRIDGET CHIDINMA',
+    usd: {
+      accountNumber: '5075389867',
+      bankName: 'Zenith bank',
+      accountName: 'Technology Beyond Disability Initiative',
+      label: 'Dollar Account'
+    },
+    naira: {
+      accountNumber: '1310216480',
+      bankName: 'Zenith bank',
+      accountName: 'Technology Beyond Disability Initiative',
+      label: 'Naira Account'
+    }
   };
 
   const donationOptions = [
@@ -41,52 +50,24 @@ const Donate: React.FC<DonateProps> = ({ onBack }) => {
 
   const handleContinueToMethod = () => {
     if (amount || customAmount) {
-      setStep('method');
+      setStep('transfer');
     }
   };
 
-  const handleSelectMethod = (method: 'transfer' | 'paystack') => {
-    setPaymentMethod(method);
-    setStep(method);
-  };
-
   const handleSent = () => {
-    setStep('processing');
-    // Simulate payment verification
-    setTimeout(() => setStep('success'), 3000);
+    setStep('whatsapp');
   };
 
-  const handlePaystackPayment = () => {
-    setStep('processing');
-    // Simulate Paystack processing
-    setTimeout(() => setStep('success'), 2000);
+  const copyToClipboard = (text: string, type: 'usd' | 'naira') => {
+    navigator.clipboard.writeText(text);
+    if (type === 'usd') {
+      setCopiedUSD(true);
+      setTimeout(() => setCopiedUSD(false), 2000);
+    } else {
+      setCopiedNaira(true);
+      setTimeout(() => setCopiedNaira(false), 2000);
+    }
   };
-
-  const copyToClipboard = () => {
-    navigator.clipboard.writeText(bankDetails.accountNumber);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
-
-  if (step === 'success') {
-    return (
-      <div className="min-h-[60vh] flex flex-col items-center justify-center text-center space-y-6 animate-in fade-in zoom-in duration-500">
-        <div className="w-24 h-24 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center">
-          <CheckCircle2 size={48} />
-        </div>
-        <h2 className="text-3xl font-bold text-brand-900">Thank You!</h2>
-        <p className="text-brand-600 max-w-xs">
-          Your donation has been received. You're helping us make menstrual health accessible to those who need it most.
-        </p>
-        <button 
-          onClick={onBack}
-          className="px-8 py-3 bg-brand-600 text-white rounded-xl font-bold shadow-lg shadow-brand-200"
-        >
-          Back to Home
-        </button>
-      </div>
-    );
-  }
 
   return (
     <div className="space-y-6 pb-12">
@@ -164,88 +145,9 @@ const Donate: React.FC<DonateProps> = ({ onBack }) => {
             disabled={!amount && !customAmount}
             className="w-full py-5 bg-brand-600 text-white rounded-2xl font-bold shadow-lg shadow-brand-200 disabled:opacity-50 disabled:shadow-none transition-all flex items-center justify-center gap-2 group"
           >
-            Continue to Payment Method
+            Proceed to Transfer
             <ChevronRight className="group-hover:translate-x-1 transition-transform" size={20} />
           </button>
-        </div>
-      ) : step === 'method' ? (
-        <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
-          <div className="flex justify-between items-center px-1">
-            <h3 className="font-bold text-brand-900">Choose Payment Method</h3>
-          </div>
-          
-          <div className="space-y-4">
-            <button
-              onClick={() => handleSelectMethod('paystack')}
-              className="w-full p-6 bg-white rounded-[2rem] border-2 border-brand-100 hover:border-brand-600 flex items-center justify-between group transition-all"
-            >
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-brand-50 rounded-2xl flex items-center justify-center text-brand-600">
-                  <CreditCard size={24} />
-                </div>
-                <div className="text-left">
-                  <h4 className="font-bold text-brand-900">Paystack</h4>
-                  <p className="text-xs text-brand-400">Pay securely with card or bank</p>
-                </div>
-              </div>
-              <ChevronRight size={20} className="text-brand-300 group-hover:text-brand-600 transition-colors" />
-            </button>
-
-            <button
-              onClick={() => handleSelectMethod('transfer')}
-              className="w-full p-6 bg-white rounded-[2rem] border-2 border-brand-100 hover:border-brand-600 flex items-center justify-between group transition-all"
-            >
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-brand-50 rounded-2xl flex items-center justify-center text-brand-600">
-                  <Building2 size={24} />
-                </div>
-                <div className="text-left">
-                  <h4 className="font-bold text-brand-900">Bank Transfer</h4>
-                  <p className="text-xs text-brand-400">Manual verification required</p>
-                </div>
-              </div>
-              <ChevronRight size={20} className="text-brand-300 group-hover:text-brand-600 transition-colors" />
-            </button>
-          </div>
-
-          <button 
-            onClick={() => setStep('amount')}
-            className="w-full py-4 text-brand-500 font-bold text-sm hover:text-brand-700 transition-colors"
-          >
-            Back to Amount
-          </button>
-        </div>
-      ) : step === 'paystack' ? (
-        <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
-          <div className="bg-white p-8 rounded-[2.5rem] border border-brand-100 shadow-xl shadow-brand-50/50 space-y-6 text-center">
-            <div className="w-20 h-20 bg-brand-50 rounded-full flex items-center justify-center mx-auto text-brand-600">
-              <CreditCard size={40} />
-            </div>
-            <div className="space-y-2">
-              <h3 className="text-2xl font-bold text-brand-900">Pay with Paystack</h3>
-              <p className="text-brand-500 text-sm">Securely pay ${amount || customAmount} using Paystack</p>
-            </div>
-            
-            <div className="bg-brand-50 p-4 rounded-2xl flex items-center justify-center gap-2">
-              <ShieldCheck size={18} className="text-brand-600" />
-              <span className="text-xs font-bold text-brand-600 uppercase tracking-widest">PCI-DSS Compliant</span>
-            </div>
-
-            <div className="space-y-3 pt-4">
-              <button 
-                onClick={handlePaystackPayment}
-                className="w-full py-5 bg-brand-600 text-white rounded-2xl font-bold shadow-lg shadow-brand-200 hover:bg-brand-700 transition-all flex items-center justify-center gap-2"
-              >
-                Pay Now
-              </button>
-              <button 
-                onClick={() => setStep('method')}
-                className="w-full py-4 text-brand-500 font-bold text-sm hover:text-brand-700 transition-colors"
-              >
-                Change Method
-              </button>
-            </div>
-          </div>
         </div>
       ) : step === 'transfer' ? (
         <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
@@ -255,28 +157,46 @@ const Donate: React.FC<DonateProps> = ({ onBack }) => {
               <p className="text-brand-500 text-sm">Please transfer the amount to the account below</p>
             </div>
 
-            <div className="bg-brand-50/50 rounded-3xl p-6 space-y-4 border border-brand-100">
-              <div className="space-y-1">
-                <p className="text-[10px] font-bold text-brand-400 uppercase tracking-widest">Account Number</p>
-                <div className="flex items-center justify-between bg-white p-4 rounded-2xl border border-brand-100">
-                  <span className="text-xl font-mono font-bold text-brand-900 tracking-wider">{bankDetails.accountNumber}</span>
-                  <button 
-                    onClick={copyToClipboard}
-                    className={`p-2 rounded-xl transition-all ${copied ? 'bg-emerald-100 text-emerald-600' : 'bg-brand-100 text-brand-600 hover:bg-brand-200'}`}
-                  >
-                    {copied ? <CheckCircle2 size={20} /> : <Copy size={20} />}
-                  </button>
+            <div className="bg-brand-50/50 rounded-3xl p-6 space-y-6 border border-brand-100">
+              {/* USD Account */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <p className="text-[10px] font-bold text-brand-400 uppercase tracking-widest">{bankDetails.usd.label}</p>
+                  <p className="text-[10px] font-bold text-brand-600 uppercase tracking-widest">{bankDetails.usd.bankName}</p>
+                </div>
+                <div className="bg-white p-4 rounded-2xl border border-brand-100">
+                  <p className="text-[10px] font-bold text-brand-400 uppercase tracking-widest mb-1">Account Name</p>
+                  <p className="text-sm font-bold text-brand-900 mb-3">{bankDetails.usd.accountName}</p>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xl font-mono font-bold text-brand-900 tracking-wider">{bankDetails.usd.accountNumber}</span>
+                    <button 
+                      onClick={() => copyToClipboard(bankDetails.usd.accountNumber, 'usd')}
+                      className={`p-2 rounded-xl transition-all ${copiedUSD ? 'bg-emerald-100 text-emerald-600' : 'bg-brand-100 text-brand-600 hover:bg-brand-200'}`}
+                    >
+                      {copiedUSD ? <CheckCircle2 size={20} /> : <Copy size={20} />}
+                    </button>
+                  </div>
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1">
-                  <p className="text-[10px] font-bold text-brand-400 uppercase tracking-widest">Bank Name</p>
-                  <p className="font-bold text-brand-900">{bankDetails.bankName}</p>
+              {/* Naira Account */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <p className="text-[10px] font-bold text-brand-400 uppercase tracking-widest">{bankDetails.naira.label}</p>
+                  <p className="text-[10px] font-bold text-brand-600 uppercase tracking-widest">{bankDetails.naira.bankName}</p>
                 </div>
-                <div className="space-y-1">
-                  <p className="text-[10px] font-bold text-brand-400 uppercase tracking-widest">Account Name</p>
-                  <p className="font-bold text-brand-900">{bankDetails.accountName}</p>
+                <div className="bg-white p-4 rounded-2xl border border-brand-100">
+                  <p className="text-[10px] font-bold text-brand-400 uppercase tracking-widest mb-1">Account Name</p>
+                  <p className="text-sm font-bold text-brand-900 mb-3">{bankDetails.naira.accountName}</p>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xl font-mono font-bold text-brand-900 tracking-wider">{bankDetails.naira.accountNumber}</span>
+                    <button 
+                      onClick={() => copyToClipboard(bankDetails.naira.accountNumber, 'naira')}
+                      className={`p-2 rounded-xl transition-all ${copiedNaira ? 'bg-emerald-100 text-emerald-600' : 'bg-brand-100 text-brand-600 hover:bg-brand-200'}`}
+                    >
+                      {copiedNaira ? <CheckCircle2 size={20} /> : <Copy size={20} />}
+                    </button>
+                  </div>
                 </div>
               </div>
 
@@ -316,23 +236,39 @@ const Donate: React.FC<DonateProps> = ({ onBack }) => {
         </div>
       ) : (
         <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
-          <div className="bg-white p-12 rounded-[2.5rem] border border-brand-100 shadow-sm text-center space-y-6">
-            <div className="relative mx-auto w-20 h-20">
-              <div className="absolute inset-0 border-4 border-brand-100 rounded-full" />
-              <div className="absolute inset-0 border-4 border-brand-600 rounded-full border-t-transparent animate-spin" />
-              <div className="absolute inset-0 flex items-center justify-center text-brand-600">
-                <Loader2 size={32} className="animate-pulse" />
-              </div>
+          <div className="bg-white p-8 rounded-[2.5rem] border border-brand-100 shadow-xl shadow-brand-50/50 space-y-6 text-center">
+            <div className="w-20 h-20 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto">
+              <CheckCircle2 size={40} />
             </div>
             <div className="space-y-2">
-              <h3 className="text-2xl font-bold text-brand-900">Verifying Transfer</h3>
-              <p className="text-brand-500 text-sm max-w-[200px] mx-auto">Please wait while our team verifies your bank transfer...</p>
+              <h3 className="text-2xl font-bold text-brand-900">Verify Your Donation</h3>
+              <p className="text-brand-500 text-sm max-w-[250px] mx-auto">
+                Please send a screenshot of your transfer receipt to our WhatsApp for verification.
+              </p>
             </div>
-          </div>
-          
-          <div className="flex items-center justify-center gap-2 text-brand-400">
-            <ShieldCheck size={16} />
-            <span className="text-xs font-medium uppercase tracking-wider">Secure Verification Process</span>
+            
+            <div className="bg-brand-50 p-4 rounded-2xl flex flex-col items-center justify-center gap-2">
+              <span className="text-[10px] font-bold text-brand-400 uppercase tracking-widest">WhatsApp Contact</span>
+              <p className="font-bold text-brand-900 text-sm">Technology Beyond Disability Initiative</p>
+              <p className="font-mono text-brand-600 font-bold mt-1">+234 816 652 1621</p>
+            </div>
+
+            <div className="space-y-3 pt-4">
+              <a 
+                href="https://wa.me/2348166521621?text=Hi,%20I%20just%20donated%20to%20Saving%20Pad.%20Here%20is%20my%20receipt:"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full py-5 bg-[#25D366] text-white rounded-2xl font-bold shadow-lg shadow-emerald-200 hover:bg-[#128C7E] transition-all flex items-center justify-center gap-2"
+              >
+                Message on WhatsApp <ExternalLink size={18} />
+              </a>
+              <button 
+                onClick={onBack}
+                className="w-full py-4 text-brand-500 font-bold text-sm hover:text-brand-700 transition-colors"
+              >
+                Close
+              </button>
+            </div>
           </div>
         </div>
       )}
